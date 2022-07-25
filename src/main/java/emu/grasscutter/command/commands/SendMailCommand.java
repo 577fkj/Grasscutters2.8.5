@@ -13,7 +13,11 @@ import java.util.List;
 import static emu.grasscutter.utils.Language.translate;
 
 @SuppressWarnings("ConstantConditions")
-@Command(label = "sendmail", usage = "sendmail <userId|all|help> [templateId]", permission = "server.sendmail", description = "commands.sendMail.description", targetRequirement = Command.TargetRequirement.NONE)
+@Command(
+    label = "sendMail",
+    usage = {"(<userId>|all) [<templateId>]", "help"},
+    permission = "server.sendmail",
+    targetRequirement = Command.TargetRequirement.NONE)
 public final class SendMailCommand implements CommandHandler {
 
     // TODO: You should be able to do /sendmail and then just send subsequent messages until you finish
@@ -39,7 +43,7 @@ public final class SendMailCommand implements CommandHandler {
                     MailBuilder mailBuilder;
                     switch (args.get(0).toLowerCase()) {
                         case "help" -> {
-                            CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.usage"));
+                            sendUsageMessage(sender);
                             return;
                         }
                         case "all" -> mailBuilder = new MailBuilder(true, new Mail());
@@ -65,7 +69,7 @@ public final class SendMailCommand implements CommandHandler {
                 switch (args.get(0).toLowerCase()) {
                     case "stop" -> {
                         mailBeingConstructed.remove(senderId);
-                        CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.sendCancel"));
+                        CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.send_cancel"));
                         return;
                     }
                     case "finish" -> {
@@ -81,12 +85,12 @@ public final class SendMailCommand implements CommandHandler {
                             }
                             mailBeingConstructed.remove(senderId);
                         } else {
-                            CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.not_composition_end", this.getConstructionArgs(mailBuilder.constructionStage, sender)));
+                            CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.not_composition_end", getConstructionArgs(mailBuilder.constructionStage, sender)));
                         }
                         return;
                     }
                     case "help" -> {
-                        CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.please_use", this.getConstructionArgs(mailBuilder.constructionStage, sender)));
+                        CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.please_use", getConstructionArgs(mailBuilder.constructionStage, sender)));
                         return;
                     }
                     default -> {
@@ -146,7 +150,7 @@ public final class SendMailCommand implements CommandHandler {
                                         }
                                         break;
                                     default: // *No args*
-                                        CommandHandler.sendMessage(sender, translate(sender, "commands.give.usage"));
+                                        CommandHandler.sendTranslatedMessage(sender, "commands.sendMail.give_usage");
                                         return;
                                 }
                                 mailBuilder.mail.itemList.add(new Mail.MailItem(item, amount, lvl));
@@ -156,7 +160,7 @@ public final class SendMailCommand implements CommandHandler {
                     }
                 }
             } else {
-                CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.invalid_arguments_please_use", this.getConstructionArgs(mailBuilder.constructionStage, sender)));
+                CommandHandler.sendMessage(sender, translate(sender, "commands.sendMail.invalid_arguments_please_use", getConstructionArgs(mailBuilder.constructionStage, sender)));
             }
         }
     }

@@ -1,11 +1,15 @@
 package emu.grasscutter.game.avatar;
 
+import java.util.Iterator;
+import java.util.List;
+
 import emu.grasscutter.data.GameData;
 import emu.grasscutter.data.excels.AvatarData;
 import emu.grasscutter.data.excels.AvatarSkillDepotData;
 import emu.grasscutter.database.DatabaseHelper;
 import emu.grasscutter.game.entity.EntityAvatar;
 import emu.grasscutter.game.inventory.GameItem;
+import emu.grasscutter.game.player.BasePlayerManager;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.server.packet.send.PacketAvatarChangeCostumeNotify;
 import emu.grasscutter.server.packet.send.PacketAvatarFlycloakChangeNotify;
@@ -14,26 +18,18 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
-import java.util.Iterator;
-import java.util.List;
-
-public class AvatarStorage implements Iterable<Avatar> {
-    private final Player player;
+public class AvatarStorage extends BasePlayerManager implements Iterable<Avatar> {
     private final Int2ObjectMap<Avatar> avatars;
     private final Long2ObjectMap<Avatar> avatarsGuid;
 
     public AvatarStorage(Player player) {
-        this.player = player;
+        super(player);
         this.avatars = new Int2ObjectOpenHashMap<>();
         this.avatarsGuid = new Long2ObjectOpenHashMap<>();
     }
 
-    public Player getPlayer() {
-        return this.player;
-    }
-
     public Int2ObjectMap<Avatar> getAvatars() {
-        return this.avatars;
+        return avatars;
     }
 
     public int getAvatarCount() {
@@ -41,15 +37,15 @@ public class AvatarStorage implements Iterable<Avatar> {
     }
 
     public Avatar getAvatarById(int id) {
-        return this.getAvatars().get(id);
+        return getAvatars().get(id);
     }
 
     public Avatar getAvatarByGuid(long id) {
-        return this.avatarsGuid.get(id);
+        return avatarsGuid.get(id);
     }
 
     public boolean hasAvatar(int id) {
-        return this.getAvatars().containsKey(id);
+        return getAvatars().containsKey(id);
     }
 
     public boolean addAvatar(Avatar avatar) {
@@ -58,7 +54,7 @@ public class AvatarStorage implements Iterable<Avatar> {
         }
 
         // Set owner first
-        avatar.setOwner(this.getPlayer());
+        avatar.setOwner(getPlayer());
 
         // Put into maps
         this.avatars.put(avatar.getAvatarId(), avatar);
@@ -88,7 +84,7 @@ public class AvatarStorage implements Iterable<Avatar> {
     public boolean wearFlycloak(long avatarGuid, int flycloakId) {
         Avatar avatar = this.getAvatarByGuid(avatarGuid);
 
-        if (avatar == null || !this.getPlayer().getFlyCloakList().contains(flycloakId)) {
+        if (avatar == null || !getPlayer().getFlyCloakList().contains(flycloakId)) {
             return false;
         }
 
@@ -96,7 +92,7 @@ public class AvatarStorage implements Iterable<Avatar> {
         avatar.save();
 
         // Update
-        this.getPlayer().sendPacket(new PacketAvatarFlycloakChangeNotify(avatar));
+        getPlayer().sendPacket(new PacketAvatarFlycloakChangeNotify(avatar));
 
         return true;
     }
@@ -108,7 +104,7 @@ public class AvatarStorage implements Iterable<Avatar> {
             return false;
         }
 
-        if (costumeId != 0 && !this.getPlayer().getCostumeList().contains(costumeId)) {
+        if (costumeId != 0 && !getPlayer().getCostumeList().contains(costumeId)) {
             return false;
         }
 
@@ -121,9 +117,9 @@ public class AvatarStorage implements Iterable<Avatar> {
         EntityAvatar entity = avatar.getAsEntity();
         if (entity == null) {
             entity = new EntityAvatar(avatar);
-            this.getPlayer().sendPacket(new PacketAvatarChangeCostumeNotify(entity));
+            getPlayer().sendPacket(new PacketAvatarChangeCostumeNotify(entity));
         } else {
-            this.getPlayer().getScene().broadcastPacket(new PacketAvatarChangeCostumeNotify(entity));
+            getPlayer().getScene().broadcastPacket(new PacketAvatarChangeCostumeNotify(entity));
         }
 
         // Done
@@ -131,7 +127,7 @@ public class AvatarStorage implements Iterable<Avatar> {
     }
 
     public void loadFromDatabase() {
-        List<Avatar> avatars = DatabaseHelper.getAvatars(this.getPlayer());
+        List<Avatar> avatars = DatabaseHelper.getAvatars(getPlayer());
 
         for (Avatar avatar : avatars) {
             // Should never happen
@@ -148,7 +144,7 @@ public class AvatarStorage implements Iterable<Avatar> {
             // Set ownerships
             avatar.setAvatarData(avatarData);
             avatar.setSkillDepot(skillDepot);
-            avatar.setOwner(this.getPlayer());
+            avatar.setOwner(getPlayer());
 
             // Force recalc of const boosted skills
             avatar.recalcConstellations();
@@ -172,6 +168,6 @@ public class AvatarStorage implements Iterable<Avatar> {
 
     @Override
     public Iterator<Avatar> iterator() {
-        return this.getAvatars().values().iterator();
+        return getAvatars().values().iterator();
     }
 }

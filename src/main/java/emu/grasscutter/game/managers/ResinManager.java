@@ -1,5 +1,8 @@
 package emu.grasscutter.game.managers;
 
+import static emu.grasscutter.config.Configuration.GAME_OPTIONS;
+
+import emu.grasscutter.game.player.BasePlayerManager;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.game.props.PlayerProperty;
 import emu.grasscutter.game.props.WatcherTriggerType;
@@ -7,13 +10,10 @@ import emu.grasscutter.server.packet.send.PacketPlayerPropNotify;
 import emu.grasscutter.server.packet.send.PacketResinChangeNotify;
 import emu.grasscutter.utils.Utils;
 
-import static emu.grasscutter.Configuration.GAME_OPTIONS;
-
-public class ResinManager {
-    private final Player player;
+public class ResinManager extends BasePlayerManager {
 
     public ResinManager(Player player) {
-        this.player = player;
+        super(player);
     }
 
     /********************
@@ -45,10 +45,10 @@ public class ResinManager {
 
         // Send packets.
         this.player.sendPacket(new PacketResinChangeNotify(this.player));
-        
+
         // Battle Pass trigger
         this.player.getBattlePassManager().triggerMission(WatcherTriggerType.TRIGGER_COST_MATERIAL, 106, amount); // Resin item id = 106
-       
+
         return true;
     }
 
@@ -98,7 +98,7 @@ public class ResinManager {
         // Calculate how much resin we need to refill and update player.
         // Note that this can be more than one in case the player
         // logged off with uncapped resin and is now logging in again.
-        int recharge = 1 + ((currentTime - this.player.getNextResinRefresh()) / GAME_OPTIONS.resinOptions.rechargeTime);
+        int recharge = 1 + (int)((currentTime - this.player.getNextResinRefresh()) / GAME_OPTIONS.resinOptions.rechargeTime);
         int newResin = Math.min(GAME_OPTIONS.resinOptions.cap, currentResin + recharge);
         int resinChange = newResin - currentResin;
 
@@ -108,7 +108,8 @@ public class ResinManager {
         // Set to zero to disable recharge (because on/over cap.)
         if (newResin >= GAME_OPTIONS.resinOptions.cap) {
             this.player.setNextResinRefresh(0);
-        } else {
+        }
+        else {
             int nextRecharge = this.player.getNextResinRefresh() + resinChange * GAME_OPTIONS.resinOptions.rechargeTime;
             this.player.setNextResinRefresh(nextRecharge);
         }

@@ -1,7 +1,5 @@
 package emu.grasscutter.game.managers.energy;
 
-import com.google.gson.reflect.TypeToken;
-import com.google.protobuf.InvalidProtocolBufferException;
 import emu.grasscutter.Grasscutter;
 import emu.grasscutter.data.DataLoader;
 import emu.grasscutter.data.GameData;
@@ -9,8 +7,13 @@ import emu.grasscutter.data.excels.AvatarSkillDepotData;
 import emu.grasscutter.data.excels.ItemData;
 import emu.grasscutter.data.excels.MonsterData.HpDrops;
 import emu.grasscutter.game.avatar.Avatar;
-import emu.grasscutter.game.entity.*;
+import emu.grasscutter.game.entity.EntityAvatar;
+import emu.grasscutter.game.entity.EntityClientGadget;
+import emu.grasscutter.game.entity.EntityItem;
+import emu.grasscutter.game.entity.EntityMonster;
+import emu.grasscutter.game.entity.GameEntity;
 import emu.grasscutter.game.inventory.GameItem;
+import emu.grasscutter.game.player.BasePlayerManager;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.game.props.ElementType;
 import emu.grasscutter.game.props.FightProperty;
@@ -25,37 +28,41 @@ import emu.grasscutter.net.proto.EvtBeingHitInfoOuterClass.EvtBeingHitInfo;
 import emu.grasscutter.net.proto.PropChangeReasonOuterClass.PropChangeReason;
 import emu.grasscutter.server.game.GameSession;
 import emu.grasscutter.utils.Position;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static emu.grasscutter.Configuration.GAME_OPTIONS;
+import static emu.grasscutter.config.Configuration.GAME_OPTIONS;
+import static java.util.Map.entry;
 
-public class EnergyManager {
-    private final Player player;
+import com.google.gson.reflect.TypeToken;
+import com.google.protobuf.InvalidProtocolBufferException;
+
+public class EnergyManager extends BasePlayerManager {
     private final Map<EntityAvatar, Integer> avatarNormalProbabilities;
-    //    energyUsage for each player
+//    energyUsage for each player
     private Boolean energyUsage;
     private final static Int2ObjectMap<List<EnergyDropInfo>> energyDropData = new Int2ObjectOpenHashMap<>();
     private final static Int2ObjectMap<List<SkillParticleGenerationInfo>> skillParticleGenerationData = new Int2ObjectOpenHashMap<>();
 
     public EnergyManager(Player player) {
-        this.player = player;
+        super(player);
         this.avatarNormalProbabilities = new HashMap<>();
-        this.energyUsage = GAME_OPTIONS.energyUsage;
-    }
-
-    public Player getPlayer() {
-        return this.player;
+        this.energyUsage=GAME_OPTIONS.energyUsage;
     }
 
     public static void initialize() {
         // Read the data we need for monster energy drops.
-        try (Reader fileReader = new InputStreamReader(DataLoader.load("EnergyDrop.json"))) {
+        try (Reader fileReader = DataLoader.loadReader("EnergyDrop.json")) {
             List<EnergyDropEntry> energyDropList = Grasscutter.getGsonFactory().fromJson(fileReader, TypeToken.getParameterized(Collection.class, EnergyDropEntry.class).getType());
 
             for (EnergyDropEntry entry : energyDropList) {
@@ -149,7 +156,7 @@ public class EnergyManager {
         int amount = 2;
 
         // Try to get the casting avatar from the player's party.
-        Optional<EntityAvatar> avatarEntity = this.getCastingAvatarEntityForEnergy(invoke.getEntityId());
+        Optional<EntityAvatar> avatarEntity = getCastingAvatarEntityForEnergy(invoke.getEntityId());
 
         // Bug: invokes twice sometimes, Ayato, Keqing
         // ToDo: deal with press, hold difference. deal with charge(Beidou, Yunjin)
@@ -167,14 +174,14 @@ public class EnergyManager {
                 // particles we have to generate.
                 if (skillDepotData != null) {
                     ElementType element = skillDepotData.getElementType();
-                    itemId = this.getBallIdForElement(element);
+                    itemId = getBallIdForElement(element);
                 }
             }
         }
 
         // Generate the particles.
         for (int i = 0; i < amount; i++) {
-            this.generateElemBall(itemId, new Position(action.getPos()), 1);
+            generateElemBall(itemId, new Position(action.getPos()), 1);
         }
     }
 
@@ -183,7 +190,7 @@ public class EnergyManager {
      **********/
     public void handlePickupElemBall(GameItem elemBall) {
         // Check if the item is indeed an energy particle/orb.
-        if (elemBall.getItemId() < 2001 || elemBall.getItemId() > 2024) {
+        if (elemBall.getItemId() < 2001 ||elemBall.getItemId() > 2024) {
             return;
         }
 
@@ -204,9 +211,9 @@ public class EnergyManager {
             // 		- etc.
             // We set a lower bound of 0.1 here, to avoid gaining no or negative energy.
             float offFieldPenalty =
-                (this.player.getTeamManager().getCurrentCharacterIndex() == i)
-                    ? 1.0f
-                    : 1.0f - this.player.getTeamManager().getActiveTeam().size() * 0.1f;
+                    (this.player.getTeamManager().getCurrentCharacterIndex() == i)
+                            ? 1.0f
+                            : 1.0f - this.player.getTeamManager().getActiveTeam().size() * 0.1f;
             offFieldPenalty = Math.max(offFieldPenalty, 0.1f);
 
             // Same element/neutral bonus.
@@ -287,7 +294,7 @@ public class EnergyManager {
             return;
         }
 
-        EntityMonster targetMonster = (EntityMonster) targetEntity;
+        EntityMonster targetMonster = (EntityMonster)targetEntity;
         MonsterType targetType = targetMonster.getMonsterData().getType();
         if (targetType != MonsterType.MONSTER_ORDINARY && targetType != MonsterType.MONSTER_BOSS) {
             return;
@@ -331,8 +338,8 @@ public class EnergyManager {
     public void handleEvtDoSkillSuccNotify(GameSession session, int skillId, int casterId) {
         // Determine the entity that has cast the skill. Cancel if we can't find that avatar.
         Optional<EntityAvatar> caster = this.player.getTeamManager().getActiveTeam().stream()
-            .filter(character -> character.getId() == casterId)
-            .findFirst();
+                .filter(character -> character.getId() == casterId)
+                .findFirst();
 
         if (caster.isEmpty()) {
             return;
@@ -358,7 +365,6 @@ public class EnergyManager {
             this.generateElemBall(info.getBallId(), monster.getPosition(), info.getCount());
         }
     }
-
     public void handleMonsterEnergyDrop(EntityMonster monster, float hpBeforeDamage, float hpAfterDamage) {
         // Make sure this is actually a monster.
         // Note that some wildlife also has that type, like boars or birds.
@@ -380,13 +386,13 @@ public class EnergyManager {
 
             float threshold = drop.getHpPercent() / 100.0f;
             if (threshold < thresholdBefore && threshold >= thresholdAfter) {
-                this.generateElemBallDrops(monster, drop.getDropId());
+                generateElemBallDrops(monster, drop.getDropId());
             }
         }
 
         // Handle kill drops.
         if (hpAfterDamage <= 0 && monster.getMonsterData().getKillDropId() != 0) {
-            this.generateElemBallDrops(monster, monster.getMonsterData().getKillDropId());
+            generateElemBallDrops(monster, monster.getMonsterData().getKillDropId());
         }
     }
 
@@ -411,7 +417,7 @@ public class EnergyManager {
         // that cast the skill.
 
         // Try to get the invoking entity from the scene.
-        GameEntity entity = this.player.getScene().getEntityById(invokeEntityId);
+        GameEntity entity = player.getScene().getEntityById(invokeEntityId);
 
         // Determine the ID of the entity that originally cast this skill. If the scene entity is null,
         // or not an `EntityClientGadget`, we assume that we are directly looking at the casting avatar
@@ -419,19 +425,19 @@ public class EnergyManager {
         // particle being generated). If the scene entity is an `EntityClientGadget`, we need to find the
         // ID of the original owner of that gadget.
         int avatarEntityId =
-            (!(entity instanceof EntityClientGadget))
-                ? invokeEntityId
-                : ((EntityClientGadget) entity).getOriginalOwnerEntityId();
+                (!(entity instanceof EntityClientGadget))
+                        ? invokeEntityId
+                        : ((EntityClientGadget)entity).getOriginalOwnerEntityId();
 
         // Finally, find the avatar entity in the player's team.
-        return this.player.getTeamManager().getActiveTeam()
-            .stream()
-            .filter(character -> character.getId() == avatarEntityId)
-            .findFirst();
+        return player.getTeamManager().getActiveTeam()
+                .stream()
+                .filter(character -> character.getId() == avatarEntityId)
+                .findFirst();
     }
 
     public Boolean getEnergyUsage() {
-        return this.energyUsage;
+        return energyUsage;
     }
 
     public void setEnergyUsage(Boolean energyUsage) {

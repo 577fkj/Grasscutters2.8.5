@@ -4,18 +4,17 @@ import dev.morphia.annotations.*;
 import emu.grasscutter.database.DatabaseHelper;
 import emu.grasscutter.utils.Crypto;
 import emu.grasscutter.utils.Utils;
-import org.bson.Document;
+
+import static emu.grasscutter.config.Configuration.*;
 
 import java.util.*;
 import java.util.stream.Stream;
 
-import static emu.grasscutter.Configuration.ACCOUNT;
-import static emu.grasscutter.Configuration.LANGUAGE;
+import org.bson.Document;
 
 @Entity(value = "accounts", useDiscriminator = false)
 public class Account {
-    @Id
-    private String id;
+    @Id private String id;
 
     @Indexed(options = @IndexOptions(unique = true))
     @Collation(locale = "simple", caseLevel = true)
@@ -27,7 +26,7 @@ public class Account {
 
     private String token;
     private String sessionKey; // Session token for dispatch server
-    private final List<String> permissions;
+    private List<String> permissions;
     private Locale locale;
 
     private String banReason;
@@ -42,7 +41,7 @@ public class Account {
     }
 
     public String getId() {
-        return this.id;
+        return id;
     }
 
     public void setId(String id) {
@@ -50,7 +49,7 @@ public class Account {
     }
 
     public String getUsername() {
-        return this.username;
+        return username;
     }
 
     public void setUsername(String username) {
@@ -58,7 +57,7 @@ public class Account {
     }
 
     public String getPassword() {
-        return this.password;
+        return password;
     }
 
     public void setPassword(String password) {
@@ -66,7 +65,7 @@ public class Account {
     }
 
     public String getToken() {
-        return this.token;
+        return token;
     }
 
     public void setToken(String token) {
@@ -82,8 +81,8 @@ public class Account {
     }
 
     public String getEmail() {
-        if (this.email != null && !this.email.isEmpty()) {
-            return this.email;
+        if (email != null && !email.isEmpty()) {
+            return email;
         } else {
             return "";
         }
@@ -104,7 +103,7 @@ public class Account {
     }
 
     public Locale getLocale() {
-        return this.locale;
+        return locale;
     }
 
     public void setLocale(Locale locale) {
@@ -112,7 +111,7 @@ public class Account {
     }
 
     public String getBanReason() {
-        return this.banReason;
+        return banReason;
     }
 
     public void setBanReason(String banReason) {
@@ -120,7 +119,7 @@ public class Account {
     }
 
     public int getBanEndTime() {
-        return this.banEndTime;
+        return banEndTime;
     }
 
     public void setBanEndTime(int banEndTime) {
@@ -128,7 +127,7 @@ public class Account {
     }
 
     public int getBanStartTime() {
-        return this.banStartTime;
+        return banStartTime;
     }
 
     public void setBanStartTime(int banStartTime) {
@@ -136,15 +135,15 @@ public class Account {
     }
 
     public boolean isBanned() {
-        if (this.banEndTime > 0 && this.banEndTime < System.currentTimeMillis() / 1000) {
+        if (banEndTime > 0 && banEndTime < System.currentTimeMillis() / 1000) {
             this.isBanned = false;
             this.banEndTime = 0;
             this.banStartTime = 0;
             this.banReason = null;
-            this.save();
+            save();
         }
 
-        return this.isBanned;
+        return isBanned;
     }
 
     public void setBanned(boolean isBanned) {
@@ -160,8 +159,7 @@ public class Account {
 
     public boolean addPermission(String permission) {
         if (this.permissions.contains(permission)) return false;
-        this.permissions.add(permission);
-        return true;
+        this.permissions.add(permission); return true;
     }
 
     public static boolean permissionMatchesWildcard(String wildcard, String[] permissionParts) {
@@ -169,12 +167,12 @@ public class Account {
         if (permissionParts.length < wildcardParts.length) {  // A longer wildcard can never match a shorter permission
             return false;
         }
-        for (int i = 0; i < wildcardParts.length; i++) {
+        for (int i=0; i<wildcardParts.length; i++) {
             switch (wildcardParts[i]) {
                 case "**":  // Recursing match
                     return true;
                 case "*":  // Match only one layer
-                    if (i >= (permissionParts.length - 1)) {
+                    if (i >= (permissionParts.length-1)) {
                         return true;
                     }
                     break;
@@ -189,12 +187,13 @@ public class Account {
     }
 
     public boolean hasPermission(String permission) {
+        if (permission.isEmpty()) return true;
         if (this.permissions.contains("*") && this.permissions.size() == 1) return true;
 
         // Add default permissions if it doesn't exist
         List<String> permissions = Stream.of(this.permissions, Arrays.asList(ACCOUNT.defaultPermissions))
-            .flatMap(Collection::stream)
-            .distinct().toList();
+                .flatMap(Collection::stream)
+                .distinct().toList();
 
         if (permissions.contains(permission)) return true;
 

@@ -6,11 +6,12 @@ import emu.grasscutter.Grasscutter;
 import emu.grasscutter.game.player.Player;
 
 import javax.annotation.Nullable;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static emu.grasscutter.Configuration.FALLBACK_LANGUAGE;
+import static emu.grasscutter.config.Configuration.*;
+
+import java.io.InputStream;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 public final class Language {
     private static final Map<String, Language> cachedLanguages = new ConcurrentHashMap<>();
@@ -21,7 +22,6 @@ public final class Language {
 
     /**
      * Creates a language instance from a code.
-     *
      * @param langCode The language code.
      * @return A language instance.
      */
@@ -48,8 +48,7 @@ public final class Language {
 
     /**
      * Returns the translated value from the key while substituting arguments.
-     *
-     * @param key  The key of the translated value to return.
+     * @param key The key of the translated value to return.
      * @param args The arguments to substitute.
      * @return A translated value with arguments substituted.
      */
@@ -66,10 +65,9 @@ public final class Language {
 
     /**
      * Returns the translated value from the key while substituting arguments.
-     *
      * @param player Target player
-     * @param key    The key of the translated value to return.
-     * @param args   The arguments to substitute.
+     * @param key The key of the translated value to return.
+     * @param args The arguments to substitute.
      * @return A translated value with arguments substituted.
      */
     public static String translate(Player player, String key, Object... args) {
@@ -92,7 +90,7 @@ public final class Language {
      * get language code
      */
     public String getLanguageCode() {
-        return this.languageCode;
+        return languageCode;
     }
 
     /**
@@ -100,7 +98,7 @@ public final class Language {
      */
     private Language(LanguageStreamDescription description) {
         @Nullable JsonObject languageData = null;
-        this.languageCode = description.getLanguageCode();
+        languageCode = description.getLanguageCode();
 
         try {
             languageData = Grasscutter.getGsonFactory().fromJson(Utils.readFromInputStream(description.getLanguageFile()), JsonObject.class);
@@ -113,8 +111,7 @@ public final class Language {
 
     /**
      * create a LanguageStreamDescription
-     *
-     * @param languageCode         The name of the language code.
+     * @param languageCode The name of the language code.
      * @param fallbackLanguageCode The name of the fallback language code.
      */
     private static LanguageStreamDescription getLanguageFileDescription(String languageCode, String fallbackLanguageCode) {
@@ -152,7 +149,6 @@ public final class Language {
 
     /**
      * Returns the value (as a string) from a nested key.
-     *
      * @param key The key to look for.
      * @return The value (as a string) from a nested key.
      */
@@ -179,21 +175,19 @@ public final class Language {
                     object = element.getAsJsonObject();
                 else {
                     isValueFound = true;
-                    result = element.getAsString();
-                    break;
+                    result = element.getAsString(); break;
                 }
             } else break;
         }
 
-        if (!isValueFound && !this.languageCode.equals("en-US")) {
+        if (!isValueFound && !languageCode.equals("en-US")) {
             var englishValue = Grasscutter.getLanguage("en-US").get(key);
             if (!englishValue.contains(valueNotFoundPattern)) {
                 result += "\nhere is english version:\n" + englishValue;
             }
         }
 
-        this.cachedTranslations.put(key, result);
-        return result;
+        this.cachedTranslations.put(key, result); return result;
     }
 
     private static class LanguageStreamDescription {
@@ -206,11 +200,11 @@ public final class Language {
         }
 
         public String getLanguageCode() {
-            return this.languageCode;
+            return languageCode;
         }
 
         public InputStream getLanguageFile() {
-            return this.languageFile;
+            return languageFile;
         }
     }
 }

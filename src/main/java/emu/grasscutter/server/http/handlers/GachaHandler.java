@@ -4,9 +4,10 @@ import emu.grasscutter.Grasscutter;
 import emu.grasscutter.database.DatabaseHelper;
 import emu.grasscutter.game.Account;
 import emu.grasscutter.game.gacha.GachaBanner;
-import emu.grasscutter.game.gacha.GachaManager;
+import emu.grasscutter.game.gacha.GachaSystem;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.server.http.Router;
+import emu.grasscutter.tools.Tools;
 import emu.grasscutter.utils.FileUtils;
 import emu.grasscutter.utils.Utils;
 import express.Express;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static emu.grasscutter.Configuration.DATA;
+import static emu.grasscutter.config.Configuration.DATA;
 import static emu.grasscutter.utils.Language.translate;
 
 /**
@@ -30,8 +31,7 @@ import static emu.grasscutter.utils.Language.translate;
 public final class GachaHandler implements Router {
     public static final String gachaMappings = DATA(Utils.toFilePath("gacha/mappings.js"));
 
-    @Override
-    public void applyRoutes(Express express, Javalin handle) {
+    @Override public void applyRoutes(Express express, Javalin handle) {
         express.get("/gacha", GachaHandler::gachaRecords);
         express.get("/gacha/details", GachaHandler::gachaDetails);
 
@@ -101,14 +101,14 @@ public final class GachaHandler implements Router {
 
         // Add translated title etc. to the page.
         template = template.replace("{{TITLE}}", translate(player, "gacha.details.title"))
-            .replace("{{AVAILABLE_FIVE_STARS}}", translate(player, "gacha.details.available_five_stars"))
-            .replace("{{AVAILABLE_FOUR_STARS}}", translate(player, "gacha.details.available_four_stars"))
-            .replace("{{AVAILABLE_THREE_STARS}}", translate(player, "gacha.details.available_three_stars"))
-            .replace("{{LANGUAGE}}", Utils.getLanguageCode(account.getLocale()));
+                .replace("{{AVAILABLE_FIVE_STARS}}", translate(player, "gacha.details.available_five_stars"))
+                .replace("{{AVAILABLE_FOUR_STARS}}", translate(player, "gacha.details.available_four_stars"))
+                .replace("{{AVAILABLE_THREE_STARS}}", translate(player, "gacha.details.available_three_stars"))
+                .replace("{{LANGUAGE}}", Utils.getLanguageCode(account.getLocale()));
 
         // Get the banner info for the banner we want.
         int scheduleId = Integer.parseInt(request.query("scheduleId"));
-        GachaManager manager = Grasscutter.getGameServer().getGachaManager();
+        GachaSystem manager = Grasscutter.getGameServer().getGachaSystem();
         GachaBanner banner = manager.getGachaBanners().get(scheduleId);
 
         // Add 5-star items.

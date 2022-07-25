@@ -1,23 +1,34 @@
 package emu.grasscutter.tools;
 
-import com.google.gson.reflect.TypeToken;
-import emu.grasscutter.GameConstants;
-import emu.grasscutter.Grasscutter;
-import emu.grasscutter.command.Command;
-import emu.grasscutter.command.CommandMap;
-import emu.grasscutter.data.GameData;
-import emu.grasscutter.data.ResourceLoader;
-import emu.grasscutter.data.binout.MainQuestData;
-import emu.grasscutter.data.excels.*;
-import emu.grasscutter.utils.Utils;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static emu.grasscutter.Configuration.RESOURCE;
+import com.google.gson.reflect.TypeToken;
+
+import emu.grasscutter.GameConstants;
+import emu.grasscutter.Grasscutter;
+import emu.grasscutter.command.Command;
+import emu.grasscutter.command.CommandHandler;
+import emu.grasscutter.command.CommandMap;
+import emu.grasscutter.data.GameData;
+import emu.grasscutter.data.ResourceLoader;
+import emu.grasscutter.data.binout.MainQuestData;
+import emu.grasscutter.data.excels.AvatarData;
+import emu.grasscutter.data.excels.ItemData;
+import emu.grasscutter.data.excels.MonsterData;
+import emu.grasscutter.data.excels.QuestData;
+import emu.grasscutter.data.excels.SceneData;
+import emu.grasscutter.utils.Utils;
+
+import static emu.grasscutter.config.Configuration.*;
 import static emu.grasscutter.utils.Language.translate;
 
 public final class Tools {
@@ -34,8 +45,7 @@ public final class Tools {
         List<String> availableLangList = new ArrayList<>();
         for (String textMapFileName : Objects.requireNonNull(textMapFolder.list((dir, name) -> name.startsWith("TextMap") && name.endsWith(".json")))) {
             availableLangList.add(textMapFileName.replace("TextMap", "").replace(".json", "").toLowerCase());
-        }
-        return availableLangList;
+        } return availableLangList;
     }
 
     public static String getLanguageOption() {
@@ -48,11 +58,10 @@ public final class Tools {
         StringBuilder stagedMessage = new StringBuilder();
         stagedMessage.append("The following languages mappings are available, please select one: [default: EN] \n");
 
-        StringBuilder groupedLangList = new StringBuilder(">\t");
-        String input;
+        StringBuilder groupedLangList = new StringBuilder(">\t"); String input;
         int groupedLangCount = 0;
 
-        for (String availableLanguage : availableLangList) {
+        for (String availableLanguage: availableLangList) {
             groupedLangCount++;
             groupedLangList.append(availableLanguage).append("\t");
 
@@ -85,9 +94,8 @@ final class ToolsWithLanguageOption {
         ResourceLoader.loadAll();
 
         Map<Long, String> map;
-        try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(Utils.toFilePath(RESOURCE("TextMap/TextMap" + language + ".json"))), StandardCharsets.UTF_8)) {
-            map = Grasscutter.getGsonFactory().fromJson(fileReader, new TypeToken<Map<Long, String>>() {
-            }.getType());
+        try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(Utils.toFilePath(RESOURCE("TextMap/TextMap"+language+".json"))), StandardCharsets.UTF_8)) {
+            map = Grasscutter.getGsonFactory().fromJson(fileReader, new TypeToken<Map<Long, String>>() {}.getType());
         }
 
         List<Integer> list;
@@ -99,16 +107,15 @@ final class ToolsWithLanguageOption {
             writer.println("// Grasscutter " + GameConstants.VERSION + " GM Handbook");
             writer.println("// Created " + dtf.format(now) + System.lineSeparator() + System.lineSeparator());
 
-            CommandMap cmdMap = new CommandMap(true);
-            List<Command> cmdList = new ArrayList<>(cmdMap.getAnnotationsAsList());
+			List<CommandHandler> cmdList = new CommandMap(true).getHandlersAsList();
 
             writer.println("// Commands");
-            for (Command cmd : cmdList) {
-                StringBuilder cmdName = new StringBuilder(cmd.label());
+			for (CommandHandler cmd : cmdList) {
+				StringBuilder cmdName = new StringBuilder(cmd.getLabel());
                 while (cmdName.length() <= 15) {
                     cmdName.insert(0, " ");
                 }
-                writer.println(cmdName + " : " + translate(cmd.description()));
+				writer.println(cmdName + " : " + translate(cmd.getDescriptionString(null)));
             }
             writer.println();
 
@@ -152,7 +159,9 @@ final class ToolsWithLanguageOption {
             for (Integer id : list) {
                 QuestData data = GameData.getQuestDataMap().get(id);
                 MainQuestData mainQuest = GameData.getMainQuestDataMap().get(data.getMainId());
-                writer.println(data.getId() + " : " + map.get(mainQuest.getTitleTextMapHash()) + " - " + map.get(data.getDescTextMapHash()));
+                if (mainQuest != null) {
+                    writer.println(data.getId() + " : " + map.get(mainQuest.getTitleTextMapHash()) + " - " + map.get(data.getDescTextMapHash()));
+                }
             }
 
             writer.println();
@@ -176,8 +185,7 @@ final class ToolsWithLanguageOption {
 
         Map<Long, String> map;
         try (InputStreamReader fileReader = new InputStreamReader(new FileInputStream(Utils.toFilePath(RESOURCE("TextMap/TextMap" + language + ".json"))), StandardCharsets.UTF_8)) {
-            map = Grasscutter.getGsonFactory().fromJson(fileReader, new TypeToken<Map<Long, String>>() {
-            }.getType());
+            map = Grasscutter.getGsonFactory().fromJson(fileReader, new TypeToken<Map<Long, String>>() {}.getType());
         }
 
         List<Integer> list;
@@ -212,8 +220,8 @@ final class ToolsWithLanguageOption {
                 // Got the magic number 4233146695 from manually search in the json file
                 writer.println(
                     "\"" + (avatarID % 1000 + 1000) + "\" : [\""
-                        + map.get(data.getNameTextMapHash()) + "(" + map.get(4233146695L) + ")\", \""
-                        + color + "\"]");
+                    + map.get(data.getNameTextMapHash()) + "(" +  map.get(4233146695L)+ ")\", \""
+                    + color + "\"]");
             }
 
             writer.println();
@@ -246,10 +254,10 @@ final class ToolsWithLanguageOption {
                 // Got the magic number 4231343903 from manually search in the json file
 
                 writer.println(",\"" + data.getId() +
-                    "\" : [\"" + map.get(data.getNameTextMapHash()).replaceAll("\"", "")
-                    + "(" + map.get(4231343903L) + ")\",\"" + color + "\"]");
+                         "\" : [\"" + map.get(data.getNameTextMapHash()).replaceAll("\"", "")
+                         + "("+ map.get(4231343903L)+")\",\""+ color + "\"]");
             }
-            writer.println(",\"200\": \"" + map.get(332935371L) + "\", \"301\": \"" + map.get(2272170627L) + "\", \"302\": \"" + map.get(2864268523L) + "\"");
+            writer.println(",\"200\": \""+map.get(332935371L)+"\", \"301\": \""+ map.get(2272170627L) + "\", \"302\": \""+map.get(2864268523L)+"\"");
             writer.println("}\n}");
         }
 

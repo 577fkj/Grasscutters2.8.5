@@ -1,9 +1,9 @@
 package emu.grasscutter.server.packet.recv;
 
 import emu.grasscutter.net.packet.Opcodes;
-import emu.grasscutter.net.packet.PacketHandler;
 import emu.grasscutter.net.packet.PacketOpcodes;
 import emu.grasscutter.net.proto.AvatarPromoteReqOuterClass.AvatarPromoteReq;
+import emu.grasscutter.net.packet.PacketHandler;
 import emu.grasscutter.server.game.GameSession;
 
 @Opcodes(PacketOpcodes.AvatarPromoteReq)
@@ -14,7 +14,7 @@ public class HandlerAvatarPromoteReq extends PacketHandler {
         AvatarPromoteReq req = AvatarPromoteReq.parseFrom(payload);
 
         // Ascend avatar
-        session.getServer().getInventoryManager().promoteAvatar(session.getPlayer(), req.getGuid());
+        session.getServer().getInventorySystem().promoteAvatar(session.getPlayer(), req.getGuid());
     }
 
 }

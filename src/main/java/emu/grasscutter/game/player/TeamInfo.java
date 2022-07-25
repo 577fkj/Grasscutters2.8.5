@@ -1,17 +1,17 @@
 package emu.grasscutter.game.player;
 
-import dev.morphia.annotations.Entity;
-import emu.grasscutter.game.avatar.Avatar;
+import static emu.grasscutter.config.Configuration.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static emu.grasscutter.Configuration.GAME_OPTIONS;
+import dev.morphia.annotations.Entity;
+import emu.grasscutter.game.avatar.Avatar;
 
 @Entity
 public class TeamInfo {
     private String name;
-    private final List<Integer> avatars;
+    private List<Integer> avatars;
 
     public TeamInfo() {
         this.name = "";
@@ -24,7 +24,7 @@ public class TeamInfo {
     }
 
     public String getName() {
-        return this.name;
+        return name;
     }
 
     public void setName(String name) {
@@ -32,39 +32,39 @@ public class TeamInfo {
     }
 
     public List<Integer> getAvatars() {
-        return this.avatars;
+        return avatars;
     }
 
     public int size() {
-        return this.avatars.size();
+        return avatars.size();
     }
 
     public boolean contains(Avatar avatar) {
-        return this.getAvatars().contains(avatar.getAvatarId());
+        return getAvatars().contains(avatar.getAvatarId());
     }
 
     public boolean addAvatar(Avatar avatar) {
-        if (this.contains(avatar)) {
+        if (contains(avatar)) {
             return false;
         }
 
-        this.getAvatars().add(avatar.getAvatarId());
+        getAvatars().add(avatar.getAvatarId());
 
         return true;
     }
 
     public boolean removeAvatar(int slot) {
-        if (this.size() <= 1) {
+        if (size() <= 1) {
             return false;
         }
 
-        this.getAvatars().remove(slot);
+        getAvatars().remove(slot);
 
         return true;
     }
 
     public void copyFrom(TeamInfo team) {
-        this.copyFrom(team, GAME_OPTIONS.avatarLimits.singlePlayerTeam);
+        copyFrom(team, GAME_OPTIONS.avatarLimits.singlePlayerTeam);
     }
 
     public void copyFrom(TeamInfo team, int maxTeamSize) {

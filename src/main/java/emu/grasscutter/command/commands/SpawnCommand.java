@@ -6,21 +6,23 @@ import emu.grasscutter.data.GameData;
 import emu.grasscutter.data.excels.GadgetData;
 import emu.grasscutter.data.excels.ItemData;
 import emu.grasscutter.data.excels.MonsterData;
-import emu.grasscutter.game.entity.EntityItem;
-import emu.grasscutter.game.entity.EntityMonster;
-import emu.grasscutter.game.entity.EntityVehicle;
-import emu.grasscutter.game.entity.GameEntity;
+import emu.grasscutter.game.entity.*;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.game.props.FightProperty;
-import emu.grasscutter.game.world.Scene;
 import emu.grasscutter.utils.Position;
+import emu.grasscutter.game.world.Scene;
 
 import java.util.List;
 
-import static emu.grasscutter.Configuration.GAME_OPTIONS;
+import static emu.grasscutter.config.Configuration.*;
 import static emu.grasscutter.utils.Language.translate;
 
-@Command(label = "spawn", usage = "spawn <entityId> [amount] [level(monster only)] [<x> <y> <z>(monster only, optional)]", aliases = {"drop"}, permission = "server.spawn", permissionTargeted = "server.spawn.others", description = "commands.spawn.description")
+@Command(
+    label = "spawn",
+    usage = {"spawn <entityId> [amount] [level(monster only)] [<x> <y> <z>(monster only)]"},
+    aliases = {"drop"},
+    permission = "server.spawn",
+    permissionTargeted = "server.spawn.others")
 public final class SpawnCommand implements CommandHandler {
 
     @Override
@@ -58,7 +60,7 @@ public final class SpawnCommand implements CommandHandler {
                 }
                 break;
             default:
-                CommandHandler.sendMessage(sender, translate(sender, "commands.spawn.usage"));
+                sendUsageMessage(sender);
                 return;
         }
 
@@ -82,9 +84,9 @@ public final class SpawnCommand implements CommandHandler {
 
         double maxRadius = Math.sqrt(amount * 0.2 / Math.PI);
         for (int i = 0; i < amount; i++) {
-            Position pos = this.GetRandomPositionInCircle(targetPlayer.getPos(), maxRadius).addY(3);
+            Position pos = GetRandomPositionInCircle(targetPlayer.getPosition(), maxRadius).addY(3);
             if (x != 0 && y != 0 && z != 0) {
-                pos = this.GetRandomPositionInCircle(new Position(x, y, z), maxRadius).addY(3);
+                pos = GetRandomPositionInCircle(new Position(x, y, z), maxRadius).addY(3);
             }
             GameEntity entity = null;
             if (itemData != null) {
@@ -105,8 +107,7 @@ public final class SpawnCommand implements CommandHandler {
                         entity.addFightProperty(FightProperty.FIGHT_PROP_CHARGE_EFFICIENCY, 0);
                         entity.addFightProperty(FightProperty.FIGHT_PROP_MAX_HP, 10000);
                     }
-                    default -> {
-                    }
+                    default -> {}
                 }
             }
             if (monsterData != null) {

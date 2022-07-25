@@ -8,9 +8,9 @@ import java.util.*;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public final class CommandMap {
-    private final Map<String, CommandHandler> commands = new HashMap<>();
-    private final Map<String, CommandHandler> aliases = new HashMap<>();
-    private final Map<String, Command> annotations = new HashMap<>();
+    private final Map<String, CommandHandler> commands = new TreeMap<>();
+    private final Map<String, CommandHandler> aliases = new TreeMap<>();
+    private final Map<String, Command> annotations = new TreeMap<>();
     private final Map<String, Integer> targetPlayerIds = new HashMap<>();
     private static final String consoleId = "console";
 
@@ -35,6 +35,7 @@ public final class CommandMap {
      */
     public CommandMap registerCommand(String label, CommandHandler command) {
         Grasscutter.getLogger().debug("Registered command: " + label);
+        label = label.toLowerCase();
 
         // Get command data.
         Command annotation = command.getClass().getAnnotation(Command.class);
@@ -106,7 +107,12 @@ public final class CommandMap {
      * @return The command handler.
      */
     public CommandHandler getHandler(String label) {
-        return this.commands.get(label);
+        CommandHandler handler = this.commands.get(label);
+        if (handler == null) {
+            // Try getting by alias
+            handler = this.aliases.get(label);
+        }
+        return handler;
     }
 
     private Player getTargetPlayer(String playerId, Player player, Player targetPlayer, List<String> args) {
@@ -129,7 +135,7 @@ public final class CommandMap {
                     }
                     return targetPlayer;
                 } catch (NumberFormatException e) {
-                    CommandHandler.sendTranslatedMessage(player, "commands.execution.uid_error");
+                    CommandHandler.sendTranslatedMessage(player, "commands.generic.invalid.uid");
                     throw new IllegalArgumentException();
                 }
             }
@@ -162,7 +168,7 @@ public final class CommandMap {
                 CommandHandler.sendTranslatedMessage(player, "commands.execution.clear_target");
                 return true;
         }
-        
+
         // Sets default targetPlayer to the UID provided.
         try {
             int uid = Integer.parseInt(targetUid);
@@ -177,7 +183,7 @@ public final class CommandMap {
             CommandHandler.sendTranslatedMessage(player, targetPlayer.isOnline()? "commands.execution.set_target_online" : "commands.execution.set_target_offline", targetUid);
             return true;
         } catch (NumberFormatException e) {
-            CommandHandler.sendTranslatedMessage(player, "commands.execution.uid_error");
+            CommandHandler.sendTranslatedMessage(player, "commands.generic.invalid.uid");
             return false;
         }
     }
@@ -198,7 +204,7 @@ public final class CommandMap {
         // Parse message.
         String[] split = rawMessage.split(" ");
         List<String> args = new LinkedList<>(Arrays.asList(split));
-        String label = args.remove(0);
+        String label = args.remove(0).toLowerCase();
         String playerId = (player == null) ? consoleId : player.getAccount().getId();
 
         // Check for special cases - currently only target command.
@@ -220,12 +226,9 @@ public final class CommandMap {
         }
 
         // Get command handler.
-        CommandHandler handler = this.commands.get(label);
-        if(handler == null)
-            // Try to get the handler by alias.
-            handler = this.aliases.get(label);
+        CommandHandler handler = this.getHandler(label);
 
-        // Check if the handler is still null.
+        // Check if the handler is null.
         if (handler == null) {
             CommandHandler.sendTranslatedMessage(player, "commands.generic.unknown_command", label);
             return;
@@ -235,7 +238,7 @@ public final class CommandMap {
         Command annotation = this.annotations.get(label);
 
         // Resolve targetPlayer
-        try{
+        try {
             targetPlayer = getTargetPlayer(playerId, player, targetPlayer, args);
         } catch (IllegalArgumentException e) {
             return;

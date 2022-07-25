@@ -9,8 +9,9 @@ import emu.grasscutter.command.CommandHandler;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.game.props.PlayerProperty;
 import emu.grasscutter.game.tower.TowerLevelRecord;
+import emu.grasscutter.server.packet.send.PacketOpenStateChangeNotify;
 
-@Command(label = "setprop", usage = "setprop|prop <prop> <value>", aliases = {"prop"}, permission = "player.setprop", permissionTargeted = "player.setprop.others", description = "commands.setProp.description")
+@Command(label = "setProp", aliases = {"prop"}, usage = {"<prop> <value>"}, permission = "player.setprop", permissionTargeted = "player.setprop.others")
 public final class SetPropCommand implements CommandHandler {
     static enum PseudoProp {
         NONE,
@@ -19,7 +20,9 @@ public final class SetPropCommand implements CommandHandler {
         BP_LEVEL,
         GOD_MODE,
         NO_STAMINA,
-        UNLIMITED_ENERGY
+        UNLIMITED_ENERGY,
+        SET_OPENSTATE,
+        UNSET_OPENSTATE
     }
 
     static class Prop {
@@ -49,9 +52,9 @@ public final class SetPropCommand implements CommandHandler {
             this.pseudoProp = pseudoProp;
         }
     }
-    
+
     Map<String, Prop> props;
-    
+
     public SetPropCommand() {
         this.props = new HashMap<>();
         // Full PlayerProperty enum that won't be advertised but can be used by devs
@@ -90,24 +93,32 @@ public final class SetPropCommand implements CommandHandler {
         Prop unlimitedenergy = new Prop("unlimitedenergy", PseudoProp.UNLIMITED_ENERGY);
         this.props.put("unlimitedenergy", unlimitedenergy);
         this.props.put("ue", unlimitedenergy);
+
+        Prop setopenstate = new Prop("setopenstate", PseudoProp.SET_OPENSTATE);
+        this.props.put("setopenstate", setopenstate);
+        this.props.put("so", setopenstate);
+
+        Prop unsetopenstate = new Prop("unsetopenstate", PseudoProp.UNSET_OPENSTATE);
+        this.props.put("unsetopenstate", unsetopenstate);
+        this.props.put("uo", unsetopenstate);
     }
 
     @Override
     public void execute(Player sender, Player targetPlayer, List<String> args) {
         if (args.size() != 2) {
-            CommandHandler.sendTranslatedMessage(sender, "commands.setProp.usage");
+            sendUsageMessage(sender);
             return;
         }
         String propStr = args.get(0).toLowerCase();
         String valueStr = args.get(1).toLowerCase();
         int value;
-        
+
         if (!props.containsKey(propStr)) {
-            CommandHandler.sendTranslatedMessage(sender, "commands.setProp.usage");
+            sendUsageMessage(sender);
             return;
         }
         try {
-            value = switch(valueStr.toLowerCase()) {
+            value = switch (valueStr.toLowerCase()) {
                 case "on", "true" -> 1;
                 case "off", "false" -> 0;
                 case "toggle" -> -1;
@@ -126,6 +137,8 @@ public final class SetPropCommand implements CommandHandler {
             case BP_LEVEL -> targetPlayer.getBattlePassManager().setLevel(value);
             case TOWER_LEVEL -> this.setTowerLevel(sender, targetPlayer, value);
             case GOD_MODE, NO_STAMINA, UNLIMITED_ENERGY -> this.setBool(sender, targetPlayer, prop.pseudoProp, value);
+            case SET_OPENSTATE -> this.setOpenState(targetPlayer, value, 1);
+            case UNSET_OPENSTATE -> this.setOpenState(targetPlayer, value, 0);
             default -> targetPlayer.setProperty(prop.prop, value);
         };
 
@@ -146,7 +159,7 @@ public final class SetPropCommand implements CommandHandler {
     }
 
     private boolean setTowerLevel(Player sender, Player targetPlayer, int topFloor) {
-        List<Integer> floorIds = targetPlayer.getServer().getTowerScheduleManager().getAllFloors();
+        List<Integer> floorIds = targetPlayer.getServer().getTowerSystem().getAllFloors();
         if (topFloor < 0 || topFloor > floorIds.size()) {
             String min = Integer.toString(0);
             String max = Integer.toString(floorIds.size());
@@ -200,6 +213,11 @@ public final class SetPropCommand implements CommandHandler {
             default:
                 return false;
         }
+        return true;
+    }
+
+    private boolean setOpenState(Player targetPlayer, int state, int value) {
+        targetPlayer.sendPacket(new PacketOpenStateChangeNotify(state, value));
         return true;
     }
 }

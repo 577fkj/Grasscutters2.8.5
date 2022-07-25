@@ -11,7 +11,7 @@ import java.util.List;
 
 import static emu.grasscutter.utils.Language.translate;
 
-@Command(label = "killall", usage = "killall [sceneId]", permission = "server.killall", permissionTargeted = "server.killall.others", description = "commands.killall.description")
+@Command(label = "killall", usage = {"[<sceneId>]"}, permission = "server.killall", permissionTargeted = "server.killall.others")
 public final class KillAllCommand implements CommandHandler {
 
     @Override
@@ -25,7 +25,7 @@ public final class KillAllCommand implements CommandHandler {
                     scene = targetPlayer.getWorld().getSceneById(Integer.parseInt(args.get(0)));
                     break;
                 default:
-                    CommandHandler.sendMessage(sender, translate(sender, "commands.killall.usage"));
+                    sendUsageMessage(sender);
                     return;
             }
         } catch (NumberFormatException ignored) {
@@ -39,8 +39,8 @@ public final class KillAllCommand implements CommandHandler {
         // Separate into list to avoid concurrency issue
         final Scene sceneF = scene;
         List<GameEntity> toKill = sceneF.getEntities().values().stream()
-            .filter(entity -> entity instanceof EntityMonster)
-            .toList();
+                .filter(entity -> entity instanceof EntityMonster)
+                .toList();
         toKill.forEach(entity -> sceneF.killEntity(entity, 0));
         CommandHandler.sendMessage(sender, translate(sender, "commands.killall.kill_monsters_in_scene", Integer.toString(toKill.size()), Integer.toString(scene.getId())));
     }

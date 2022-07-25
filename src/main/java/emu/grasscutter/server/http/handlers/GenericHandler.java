@@ -1,23 +1,22 @@
 package emu.grasscutter.server.http.handlers;
 
+import static emu.grasscutter.config.Configuration.ACCOUNT;
+
 import emu.grasscutter.GameConstants;
 import emu.grasscutter.Grasscutter;
-import emu.grasscutter.server.http.Router;
 import emu.grasscutter.server.http.objects.HttpJsonResponse;
+import emu.grasscutter.server.http.Router;
 import emu.grasscutter.server.http.objects.WebStaticVersionResponse;
 import express.Express;
 import express.http.Request;
 import express.http.Response;
 import io.javalin.Javalin;
 
-import static emu.grasscutter.Configuration.ACCOUNT;
-
 /**
  * Handles all generic, hard-coded responses.
  */
 public final class GenericHandler implements Router {
-    @Override
-    public void applyRoutes(Express express, Javalin handle) {
+    @Override public void applyRoutes(Express express, Javalin handle) {
         // hk4e-sdk-os.hoyoverse.com
         express.get("/hk4e_global/mdk/agreement/api/getAgreementInfos", new HttpJsonResponse("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"marketing_agreements\":[]}}"));
         // hk4e-sdk-os.hoyoverse.com

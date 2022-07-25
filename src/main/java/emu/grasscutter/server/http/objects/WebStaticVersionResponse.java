@@ -1,11 +1,17 @@
 package emu.grasscutter.server.http.objects;
 
 import emu.grasscutter.Grasscutter;
+import emu.grasscutter.data.DataLoader;
 import emu.grasscutter.utils.FileUtils;
+import emu.grasscutter.utils.Utils;
 import express.http.HttpContextHandler;
 import express.http.MediaType;
 import express.http.Request;
 import express.http.Response;
+import io.javalin.core.util.FileUtil;
+
+import static emu.grasscutter.config.Configuration.DATA;
+import static emu.grasscutter.config.Configuration.DISPATCH_INFO;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +33,7 @@ public class WebStaticVersionResponse implements HttpContextHandler {
             response.type((fromExtension != null) ? fromExtension.getMIME() : "application/octet-stream");
             response.send(filestream.readAllBytes());
         } catch (Exception e) {
-            if (Grasscutter.getConfig().server.debugLevel.equals(Grasscutter.ServerDebugMode.MISSING)) {
+            if (DISPATCH_INFO.logRequests == Grasscutter.ServerDebugMode.MISSING) {
                 Grasscutter.getLogger().warn("Webstatic File Missing: " + path);
             }
             response.status(404);

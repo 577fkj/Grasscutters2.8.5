@@ -1,48 +1,43 @@
 package emu.grasscutter.game.mail;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import emu.grasscutter.Grasscutter;
 import emu.grasscutter.database.DatabaseHelper;
+import emu.grasscutter.game.player.BasePlayerManager;
 import emu.grasscutter.game.player.Player;
 import emu.grasscutter.server.event.player.PlayerReceiveMailEvent;
 import emu.grasscutter.server.packet.send.PacketDelMailRsp;
 import emu.grasscutter.server.packet.send.PacketMailChangeNotify;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-public class MailHandler {
-    private final Player player;
+public class MailHandler extends BasePlayerManager {
     private final List<Mail> mail;
 
     public MailHandler(Player player) {
-        this.player = player;
+        super(player);
+
         this.mail = new ArrayList<>();
     }
 
-    public Player getPlayer() {
-        return this.player;
-    }
-
     public List<Mail> getMail() {
-        return this.mail;
+        return mail;
     }
 
     // ---------------------MAIL------------------------
 
     public void sendMail(Mail message) {
         // Call mail receive event.
-        PlayerReceiveMailEvent event = new PlayerReceiveMailEvent(this.getPlayer(), message);
-        event.call();
-        if (event.isCanceled()) return;
-        message = event.getMessage();
+        PlayerReceiveMailEvent event = new PlayerReceiveMailEvent(this.getPlayer(), message); event.call();
+        if (event.isCanceled()) return; message = event.getMessage();
 
         message.setOwnerUid(this.getPlayer().getUid());
         message.save();
 
         this.mail.add(message);
 
-        Grasscutter.getLogger().debug("Mail sent to user [" + this.getPlayer().getUid() + ":" + this.getPlayer().getNickname() + "]!");
+        Grasscutter.getLogger().debug("Mail sent to user [" + this.getPlayer().getUid()  + ":" + this.getPlayer().getNickname() + "]!");
 
         if (this.getPlayer().isOnline()) {
             this.getPlayer().sendPacket(new PacketMailChangeNotify(this.getPlayer(), message));
@@ -50,7 +45,7 @@ public class MailHandler {
     }
 
     public boolean deleteMail(int mailId) {
-        Mail message = this.getMailById(mailId);
+        Mail message = getMailById(mailId);
 
         if (message != null) {
             this.getMail().remove(mailId);
@@ -76,20 +71,18 @@ public class MailHandler {
             }
         }
 
-        this.player.getSession().send(new PacketDelMailRsp(this.player, deleted));
-        this.player.getSession().send(new PacketMailChangeNotify(this.player, null, deleted));
+        player.getSession().send(new PacketDelMailRsp(player, deleted));
+        player.getSession().send(new PacketMailChangeNotify(player, null, deleted));
     }
 
-    public Mail getMailById(int index) {
-        return this.mail.get(index);
-    }
+    public Mail getMailById(int index) { return this.mail.get(index); }
 
     public int getMailIndex(Mail message) {
         return this.mail.indexOf(message);
     }
 
     public boolean replaceMailByIndex(int index, Mail message) {
-        if (this.getMailById(index) != null) {
+        if (getMailById(index) != null) {
             this.mail.set(index, message);
             message.save();
             return true;

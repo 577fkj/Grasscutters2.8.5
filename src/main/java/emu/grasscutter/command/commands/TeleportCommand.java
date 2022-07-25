@@ -9,7 +9,7 @@ import java.util.List;
 
 import static emu.grasscutter.utils.Language.translate;
 
-@Command(label = "teleport", usage = "teleport <x> <y> <z> [sceneId]", aliases = {"tp"}, permission = "player.teleport", permissionTargeted = "player.teleport.others", description = "commands.teleport.description")
+@Command(label = "teleport", aliases = {"tp"}, usage = {"<x> <y> <z> [sceneId]"}, permission = "player.teleport", permissionTargeted = "player.teleport.others")
 public final class TeleportCommand implements CommandHandler {
 
     private float parseRelative(String input, Float current) {  // TODO: Maybe this will be useful elsewhere later
@@ -25,7 +25,7 @@ public final class TeleportCommand implements CommandHandler {
 
     @Override
     public void execute(Player sender, Player targetPlayer, List<String> args) {
-        Position pos = targetPlayer.getPos();
+        Position pos = targetPlayer.getPosition();
         float x = pos.getX();
         float y = pos.getY();
         float z = pos.getZ();
@@ -35,20 +35,20 @@ public final class TeleportCommand implements CommandHandler {
             case 4:
                 try {
                     sceneId = Integer.parseInt(args.get(3));
-                } catch (NumberFormatException ignored) {
+                }catch (NumberFormatException ignored) {
                     CommandHandler.sendMessage(sender, translate(sender, "commands.execution.argument_error"));
                 }  // Fallthrough
             case 3:
                 try {
-                    x = this.parseRelative(args.get(0), x);
-                    y = this.parseRelative(args.get(1), y);
-                    z = this.parseRelative(args.get(2), z);
+                    x = parseRelative(args.get(0), x);
+                    y = parseRelative(args.get(1), y);
+                    z = parseRelative(args.get(2), z);
                 } catch (NumberFormatException ignored) {
                     CommandHandler.sendMessage(sender, translate(sender, "commands.teleport.invalid_position"));
                 }
                 break;
             default:
-                CommandHandler.sendMessage(sender, translate(sender, "commands.teleport.usage"));
+                sendUsageMessage(sender);
                 return;
         }
 
@@ -58,8 +58,8 @@ public final class TeleportCommand implements CommandHandler {
             CommandHandler.sendMessage(sender, translate(sender, "commands.teleport.exists_error"));
         } else {
             CommandHandler.sendMessage(sender, translate(sender, "commands.teleport.success",
-                targetPlayer.getNickname(), Float.toString(x), Float.toString(y),
-                Float.toString(z), Integer.toString(sceneId))
+                    targetPlayer.getNickname(), Float.toString(x), Float.toString(y),
+                    Float.toString(z), Integer.toString(sceneId))
             );
         }
 

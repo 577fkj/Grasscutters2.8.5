@@ -2,8 +2,8 @@ package emu.grasscutter.server.http.handlers;
 
 import emu.grasscutter.Grasscutter;
 import emu.grasscutter.data.DataLoader;
-import emu.grasscutter.server.http.Router;
 import emu.grasscutter.server.http.objects.HttpJsonResponse;
+import emu.grasscutter.server.http.Router;
 import emu.grasscutter.utils.FileUtils;
 import emu.grasscutter.utils.Utils;
 import express.Express;
@@ -12,18 +12,20 @@ import express.http.Request;
 import express.http.Response;
 import io.javalin.Javalin;
 
+import static emu.grasscutter.config.Configuration.*;
+
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-
-import static emu.grasscutter.Configuration.*;
 
 /**
  * Handles requests related to the announcements page.
  */
 public final class AnnouncementsHandler implements Router {
-    @Override
-    public void applyRoutes(Express express, Javalin handle) {
+    @Override public void applyRoutes(Express express, Javalin handle) {
         // hk4e-api-os.hoyoverse.com
         express.all("/common/hk4e_global/announcement/api/getAlertPic", new HttpJsonResponse("{\"retcode\":0,\"message\":\"OK\",\"data\":{\"total\":0,\"list\":[]}}"));
         // hk4e-api-os.hoyoverse.com
@@ -66,8 +68,8 @@ public final class AnnouncementsHandler implements Router {
         }
 
         String dispatchDomain = "http" + (HTTP_ENCRYPTION.useInRouting ? "s" : "") + "://"
-            + lr(HTTP_INFO.accessAddress, HTTP_INFO.bindAddress) + ":"
-            + lr(HTTP_INFO.accessPort, HTTP_INFO.bindPort);
+                + lr(HTTP_INFO.accessAddress, HTTP_INFO.bindAddress) + ":"
+                + lr(HTTP_INFO.accessPort, HTTP_INFO.bindPort);
 
         data = data
             .replace("{{DISPATCH_PUBLIC}}", dispatchDomain)
